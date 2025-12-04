@@ -2,7 +2,7 @@ use nom::{
     IResult, Parser,
     branch::alt,
     character::complete::{char, digit1, newline},
-    combinator::map_res,
+    combinator::{all_consuming, map_res},
     multi::separated_list0,
 };
 
@@ -51,7 +51,7 @@ pub fn part_two(input: &str) -> Option<u64> {
 }
 
 fn parse_entire_input(input: &str) -> IResult<&str, Vec<Rotation>> {
-    separated_list0(newline, parse_single_line).parse(input)
+    all_consuming(separated_list0(newline, parse_single_line)).parse(input)
 }
 
 fn parse_single_line(input: &str) -> IResult<&str, Rotation> {
@@ -66,7 +66,7 @@ fn parse_single_line(input: &str) -> IResult<&str, Rotation> {
 }
 
 fn decimal_value(input: &str) -> IResult<&str, u64> {
-    map_res(digit1, |out| str::replace(out, "_", "").parse::<u64>()).parse(input)
+    map_res(digit1, str::parse).parse(input)
 }
 
 #[cfg(test)]

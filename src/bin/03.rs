@@ -3,8 +3,7 @@ advent_of_code::solution!(3);
 use nom::{
     IResult, Parser,
     character::complete::{newline, one_of},
-    combinator::map_res,
-    error::Error,
+    combinator::{all_consuming, map_opt},
     multi::{many1, separated_list0},
 };
 
@@ -66,17 +65,11 @@ pub fn part_two(input: &str) -> Option<u64> {
 }
 
 fn parse_entire_input(input: &str) -> IResult<&str, Vec<Bank>> {
-    separated_list0(newline, parse_single_line).parse(input)
+    all_consuming(separated_list0(newline, parse_single_line)).parse(input)
 }
 
 fn parse_single_line(input: &str) -> IResult<&str, Bank> {
-    many1(map_res(one_of("0123456789"), |c| {
-        c.to_digit(10).ok_or(Error::new(
-            "unable to parse digit",
-            nom::error::ErrorKind::Digit,
-        ))
-    }))
-    .parse(input)
+    many1(map_opt(one_of("0123456789"), |c| c.to_digit(10))).parse(input)
 }
 
 #[cfg(test)]

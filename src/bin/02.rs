@@ -1,7 +1,7 @@
 use nom::{
     IResult, Parser,
     character::complete::{char, digit1},
-    combinator::map_res,
+    combinator::{all_consuming, map_res},
     multi::separated_list0,
     sequence::separated_pair,
 };
@@ -70,7 +70,7 @@ fn is_invalid_id2(id: u64) -> bool {
 }
 
 fn parse_entire_input(input: &str) -> IResult<&str, Vec<(u64, u64)>> {
-    separated_list0(char(','), parse_single_line).parse(input)
+    all_consuming(separated_list0(char(','), parse_single_line)).parse(input)
 }
 
 fn parse_single_line(input: &str) -> IResult<&str, (u64, u64)> {
@@ -78,7 +78,7 @@ fn parse_single_line(input: &str) -> IResult<&str, (u64, u64)> {
 }
 
 fn decimal_value(input: &str) -> IResult<&str, u64> {
-    map_res(digit1, |out| str::replace(out, "_", "").parse::<u64>()).parse(input)
+    map_res(digit1, str::parse).parse(input)
 }
 
 #[cfg(test)]
