@@ -1,5 +1,6 @@
-use std::collections::HashMap;
-
+use good_lp::{
+    Expression, Solution, SolverModel, constraint, microlp, variable, variable::ProblemVariables,
+};
 use nom::{
     IResult, Parser,
     character::complete::{char, digit1, newline, one_of},
@@ -27,11 +28,34 @@ pub fn part_one(input: &str) -> Option<u64> {
 pub fn part_two(input: &str) -> Option<u64> {
     let rows = parse_entire_input_2(input)?;
     let mut total_presses = 0;
+
     for (_, buttons, joltages) in rows {
-        let presses = recurse_row_2(joltages, &buttons, &mut HashMap::new());
-        total_presses += presses;
+        let mut vars = Vec::new();
+        let mut problem = ProblemVariables::new();
+        let mut total_value: Expression = 0.into();
+        for _ in &buttons {
+            let var = problem.add(variable().integer().min(0));
+            total_value += var;
+            vars.push(var);
+        }
+        let mut solution = problem.minimise(total_value).using(microlp);
+        for (i, joltage) in joltages.into_iter().enumerate() {
+            let mut lhs: Expression = 0.into();
+            let rhs: Expression = (joltage as i32).into();
+            for (button_idx, button) in buttons.iter().enumerate() {
+                for &indicator in button {
+                    if indicator == i {
+                        lhs += vars[button_idx];
+                    }
+                }
+            }
+            solution = solution.with(constraint!(lhs == rhs));
+        }
+        let solution = solution.solve().ok()?;
+
+        total_presses += vars.iter().map(|&v| solution.value(v)).sum::<f64>() as u64;
     }
-    Some(total_presses as u64)
+    Some(total_presses)
 }
 
 fn recurse_row(
@@ -59,54 +83,6 @@ fn recurse_row(
             min_presses = presses;
         }
     }
-    min_presses
-}
-
-fn recurse_row_2(
-    current_val: Vec<usize>,
-    remaining_buttons: &[Vec<usize>],
-    precomp: &mut HashMap<String, usize>,
-) -> usize {
-    if current_val.iter().all(|&v| v == 0) {
-        return 0;
-    }
-    if remaining_buttons.is_empty() {
-        return usize::MAX;
-    }
-
-    let hash_string = format!("{:?}:{}", current_val, remaining_buttons.len());
-    if let Some(&min_presses) = precomp.get(&hash_string) {
-        return min_presses;
-    }
-
-    let mut min_presses = usize::MAX;
-    let mut current_button_count = 0;
-    let mut current_val = current_val;
-    loop {
-        let presses = recurse_row_2(current_val.clone(), &remaining_buttons[1..], precomp);
-        if presses != usize::MAX && (presses + current_button_count) < min_presses {
-            min_presses = presses + current_button_count;
-        }
-
-        let mut next_loop_valid = true;
-        for &index in remaining_buttons
-            .first()
-            .expect("checked remaining buttons is not empty above")
-        {
-            if current_val[index] == 0 {
-                next_loop_valid = false;
-                break;
-            }
-
-            current_val[index] -= 1;
-        }
-        if !next_loop_valid {
-            break;
-        }
-        current_button_count += 1;
-    }
-
-    precomp.insert(hash_string, min_presses);
     min_presses
 }
 

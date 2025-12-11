@@ -29,3 +29,4 @@ tinyjson = "2.5.1"
 
 # Solution dependencies
 nom = { version = "8.0.0" }
+good_lp = { version = "1.14.2", features = ["microlp"], default-features = false }
