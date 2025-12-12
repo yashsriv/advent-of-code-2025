@@ -39,7 +39,7 @@ fn find_num_paths(
     match graph.get(current) {
         None => 0,
         Some(linked_nodes) => linked_nodes
-            .into_iter()
+            .iter()
             .filter(|&node| !path.contains(node))
             .map(|node| {
                 find_num_paths(
